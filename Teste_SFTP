@@ -1,0 +1,68 @@
+# coding: latin-1
+import os,io,sys
+import paramiko
+from io import FileIO, StringIO
+from paramiko.pkey import PKey
+
+HOST = "mft4app-west.pwc.com"
+
+from paramiko.rsakey import RSAKey
+
+key_data = StringIO('''
+-----BEGIN RSA PRIVATE KEY-----
+Proc-Type: 4,ENCRYPTED
+DEK-Info: DES-EDE3-CBC,39072989A1A5DA01
+
+PVWNan62uaGmVGAKBmEyKint3alAZ+nVzC7nVpXWIY4e5B5jE3x/L0r6thAI/Mf8
++ZOqVDbTGNnDYsLIORdDOunYg0JDv5TG6vsICKNzNQltWcIMMoGNZH4ww6Gc+ge1
+qCX1qVMjpj7nIjMDA3xMnsVSbO67QlFaWlm+xGUVjU3/nQqUGkBDkH7tpeNXvPg1
+4PUCTyrRUczqLty/Dd3xCzCSIxo9Dy+b3Jb5W9O2qoEAOMfSQmFHNCQPIZKE4GAn
+lEyeIRrNYIbnscXUTrmTI72I/nUQ9Nw6aNsoR1e5U4RpmibHmqYTlxbVd0Ylm0If
+3Z/O2njzSweTo1F9pgPhkkDkICAqJgtvYPz6f3iH3WySV6MyxL6X2+j6gUyh9wIB
+1YvrEI9NBMEfETUXkv5RY5uGYy17r0SdwBNzA6oroCGdh3zGZFLbISMixPMRv9TB
+bYkKbgoDHZnvt3/CDcxuOT8WbHYlk9TZZeN6aqJYFhIsxX/EKAt3oVmJ0EngjhXE
+PlQWYqGw5ZQFLeu0YMqIHo3b5xXqI0XGZ4PaURodJPlIK/f0JhcNqbgGGrfdkx6z
+u0FlvwM3+pOMaMu0jfj1H7+FvDRQj0yLtwgSI1m3rGjIws7qoKLeiVCRPh2K5lnA
+dj3r+/+KavFgWmvDUWO1GhZHOiCPIr5koZXWhPuuafkDQ/TG4In5cXYUg+EJpMsV
+CsBFx6vzwPUO1vFuuxo1yOmOs5gxKeTam2RX66UNFSIhQh5hiPF153gaSK5rKhzh
+xD+4OebOgSi/btEXfsK/aVbUpPrAYELEp+itbr3Wylmb4yCKFTS3JPboV/eLOas1
+0rwIA1z1r4nbsrBmj8O41/0RzAu+u9yKDffwH7JvS/rPFWsOw5cxIDMlV8HMaWAt
+B4I/Rt49evA3QNrd8rD6gyQGOhD1NJpo8SwfDKTx8dH2tnjLqgKAw2gwaB3j5HtQ
+2NofMidrQgnJl8Zu6pnIldk+NCTwxAzJ2CEYDZfbxlaE0JWQDqjGVOxRgQw5LLCX
+/4sYy10b0BpAdTrHi37rY8bnH3ycTxvBD5pY+jYizkS07D9S7Ow/ZsPrUBnadxE5
+viuvWLgO77zYqLFvUeB3IsDpp47CiLk6KOn7fClzv+JD99SHI1p/586rhAwZr+UK
+4Js0AutnOp+1J0R6/XPcYYrqd/U6G3ZxuK1KDRn7Ej+hNZ+Egedt6RJ0m1nRiwU7
+/+oZhKtJ+P64kZfe/DJN/PVlnv4jtReYnwCnUZHcQ1RfjskRiZuuBWYvw5t9JrbD
+C105SihTMCoGX5BM6Wcl6P8UcIZEuoJgAZmfPWT5HhbrcvSwK0W+xIk/OCjahl0A
+hvdyBTK72KHWOJ8IKrYEBbOkkeaLFx+WI7ytKSX4u3XYWhQYOydZpnSlBhOjBuV/
+sjlz7MzeIucaOh+e+WEBM8KqWoATQXfK5tPlTJaXmibI2e8qwq0GO3z7m6MalZk8
+LQi+/oihoIIogG1H6b8C8CBjApqDD4rWxwzaS60sZWci1Th/MICqdi+1BdfvTJme
+soX8rCA0oZ6QDdx5v5L14Wa9DWaGmHqbSbvDc11T8BBHKvJXblG4qTlSn3SulIIw
+-----END RSA PRIVATE KEY-----
+'''.strip() )
+
+key_data = RSAKey( file_obj=key_data, password=os.environ['zBTnG2G,&8l14pQr)3$0'] )
+
+ssh_client = paramiko.SSHClient()
+
+ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh_client.connect(hostname=HOST, port=22, username=os.environ['pwcbr_pagbank_prd_scv_account'], password=os.environ['?6jY?$w`PF7[O;GkT&>;ONF>:iG^Ga'], pkey=key_data )
+
+infile = sys.argv[1]
+folderdest = sys.argv[2]
+
+filepath, filename = os.path.split(infile)
+
+def byte_count(xfer, to_be_xfer):
+    print( filename + " transferred: {0:.0f} %".format((xfer / to_be_xfer) * 100) )
+
+ftp = ssh_client.open_sftp()
+remotedirs = ftp.listdir()
+if folderdest not in remotedirs:
+    print(f"Pasta '{folderdest}' não encontrada: ",remotedirs)
+    files = ftp.mkdir( folderdest )
+
+files = ftp.put( infile, os.path.join(folderdest, filename), callback=byte_count )
+
+ftp.close()
+ssh_client.close()
